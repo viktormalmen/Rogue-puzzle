@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tjuvens Kassaskåp</title>
+
+<style>
+body{
+  margin:0;
+  min-height:100vh;
+  display:grid;
+  place-items:center;
+  background:#0e0f14;
+  font-family:system-ui, sans-serif;
+  color:#eaeaff;
+}
+
+.lock{
+  width:320px;
+  height:320px;
+  border-radius:50%;
+  background:#1c1f2b;
+  position:relative;
+  box-shadow:0 0 40px rgba(0,0,0,.6);
+}
+
+.tile{
+  width:70px;
+  height:70px;
+  border-radius:50%;
+  background:var(--img);
+  background-size:300% 300%;
+  position:absolute;
+  display:grid;
+  place-items:center;
+  font-weight:700;
+  cursor:pointer;
+  transition:.2s;
+}
+
+.tile.locked{
+  filter:grayscale(1) brightness(.6);
+  cursor:not-allowed;
+}
+
+.center{
+  position:absolute;
+  inset:120px;
+  border-radius:50%;
+  background:#2a2e40;
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+  font-size:14px;
+}
+
+.message{
+  margin-top:16px;
+  text-align:center;
+  min-height:1.2em;
+}
+</style>
+</head>
+
+<body>
+
+<div>
+  <div class="lock" id="lock"></div>
+  <div class="message" id="msg"></div>
+</div>
+
+<script>
+(() => {
+const IMAGE_URL = "https://i.imgur.com/4YJ6z9r.jpg"; // antikt lås
+const solution = [
+  "c-cw","e-ccw","c-cw","a-ccw","b-ccw","b-cw"
+];
+
+let input = [];
+let used = {};
+
+const lock = document.getElementById("lock");
+const msg = document.getElementById("msg");
+
+lock.style.setProperty("--img", `url(${IMAGE_URL})`);
+
+const positions = {
+  a:[125,10], b:[215,70], c:[215,170],
+  d:[125,230], e:[35,170], f:[35,70]
+};
+
+function reset(){
+  lock.innerHTML="";
+  input=[];
+  used={};
+  msg.textContent="Låset väntar…";
+  create();
+}
+
+function rotate(id, dir){
+  if(used[id]) return;
+  used[id]=true;
+  input.push(`${id}-${dir}`);
+
+  if(input.join("//")===solution.join("//")){
+    msg.textContent="🔓 Kassaskåpet öppnas ljudlöst.";
+    lock.style.boxShadow="0 0 40px rgba(120,255,200,.6)";
+  }else if(!solution.join("//").startsWith(input.join("//"))){
+    msg.textContent="❌ Ett klick… något gick fel.";
+  }
+}
+
+function create(){
+  Object.entries(positions).forEach(([id,[x,y]])=>{
+    const t=document.createElement("div");
+    t.className="tile";
+    t.textContent=id.toUpperCase();
+    t.style.left=x+"px";
+    t.style.top=y+"px";
+
+    t.onclick=()=>{
+      if(used[id]) return;
+      const dir = confirm("OK = medurs (cw)\nAvbryt = moturs (ccw)") ? "cw":"ccw";
+      rotate(id,dir);
+      t.classList.add("locked");
+    };
+    lock.appendChild(t);
+  });
+
+  const c=document.createElement("div");
+  c.className="center";
+  c.textContent="Reset";
+  c.onclick=reset;
+  lock.appendChild(c);
+}
+
+create();
+})();
+</script>
+
+</body>
+</html>
