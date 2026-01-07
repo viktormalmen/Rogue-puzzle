@@ -209,8 +209,9 @@
       const btn = document.createElement("div");
       btn.className = "tile";
       btn.dataset.letter = letter;
-      btn.style.left = `calc(${xPct}% - 37px)`;
-      btn.style.top  = `calc(${yPct}% - 37px)`;
+      btn.style.left = `${xPct}%`;
+      btn.style.top  = `${yPct}%`;
+      btn.style.transform = "translate(-50%, -50%)";
       btn.textContent = SYMBOLS[letter] ?? letter;
 
       btn.addEventListener("click", () => clickSymbol(letter));
