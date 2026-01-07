@@ -46,24 +46,35 @@
     opacity:.35;
   }
 
-  .tile{
-    width:74px;
-    height:74px;
-    border-radius:50%;
-    position:absolute;
-    display:grid;
-    place-items:center;
-    font-weight:800;
-    cursor:pointer;
-    user-select:none;
-    transition: transform .12s ease, filter .2s ease, opacity .2s ease;
-    outline: 1px solid rgba(255,255,255,.14);
-    background: rgba(20,22,30,.65);
-    backdrop-filter: blur(2px);
-    z-index: 1;
+.tile{
+  width:74px;
+  height:74px;
+  border-radius:50%;
+  position:absolute;
+  display:grid;
+  place-items:center;
+  font-weight:800;
+  cursor:pointer;
+  user-select:none;
+  transition: transform .12s ease, filter .2s ease, opacity .2s ease;
+  outline: 1px solid rgba(255,255,255,.14);
+  background: rgba(20,22,30,.65);
+  backdrop-filter: blur(2px);
+  z-index: 1;
+
+  /* ✅ Viktigt: alltid centrerad på sin punkt */
+  transform: translate(-50%, -50%);
+}
+
   }
-  .tile:hover{ transform: scale(1.03); filter:brightness(1.08); }
-  .tile:active{ transform: scale(.98); }
+.tile:hover{
+  transform: translate(-50%, -50%) scale(1.03);
+  filter:brightness(1.08);
+}
+.tile:active{
+  transform: translate(-50%, -50%) scale(.98);
+}
+
 
   .tile.locked{
     opacity:.35;
@@ -74,10 +85,11 @@
   .tile.wrongflash{
     animation: wrong .25s ease-in-out 2;
   }
-  @keyframes wrong{
-    0%,100%{ transform: scale(1); }
-    50%{ transform: scale(1.04); }
-  }
+@keyframes wrong{
+  0%,100%{ transform: translate(-50%, -50%) scale(1); }
+  50%{ transform: translate(-50%, -50%) scale(1.04); }
+}
+
 
   .center{
     position:absolute;
@@ -211,7 +223,6 @@
       btn.dataset.letter = letter;
       btn.style.left = `${xPct}%`;
       btn.style.top  = `${yPct}%`;
-      btn.style.transform = "translate(-50%, -50%)";
       btn.textContent = SYMBOLS[letter] ?? letter;
 
       btn.addEventListener("click", () => clickSymbol(letter));
