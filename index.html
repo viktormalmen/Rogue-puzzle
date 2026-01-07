@@ -34,7 +34,6 @@
     overflow:hidden;
   }
 
-  /* “Antikt lås”-bakgrund */
   .lock::before{
     content:"";
     position:absolute;
@@ -46,35 +45,33 @@
     opacity:.35;
   }
 
-.tile{
-  width:74px;
-  height:74px;
-  border-radius:50%;
-  position:absolute;
-  display:grid;
-  place-items:center;
-  font-weight:800;
-  cursor:pointer;
-  user-select:none;
-  transition: transform .12s ease, filter .2s ease, opacity .2s ease;
-  outline: 1px solid rgba(255,255,255,.14);
-  background: rgba(20,22,30,.65);
-  backdrop-filter: blur(2px);
-  z-index: 1;
+  .tile{
+    width:74px;
+    height:74px;
+    border-radius:50%;
+    position:absolute;
+    display:grid;
+    place-items:center;
+    font-weight:800;
+    cursor:pointer;
+    user-select:none;
+    transition: transform .12s ease, filter .2s ease, opacity .2s ease;
+    outline: 1px solid rgba(255,255,255,.14);
+    background: rgba(20,22,30,.65);
+    backdrop-filter: blur(2px);
+    z-index: 1;
 
-  /* ✅ Viktigt: alltid centrerad på sin punkt */
-  transform: translate(-50%, -50%);
-}
-
+    /* alltid centrerad på sin punkt */
+    transform: translate(-50%, -50%);
   }
-.tile:hover{
-  transform: translate(-50%, -50%) scale(1.03);
-  filter:brightness(1.08);
-}
-.tile:active{
-  transform: translate(-50%, -50%) scale(.98);
-}
 
+  .tile:hover{
+    transform: translate(-50%, -50%) scale(1.03);
+    filter:brightness(1.08);
+  }
+  .tile:active{
+    transform: translate(-50%, -50%) scale(.98);
+  }
 
   .tile.locked{
     opacity:.35;
@@ -85,11 +82,10 @@
   .tile.wrongflash{
     animation: wrong .25s ease-in-out 2;
   }
-@keyframes wrong{
-  0%,100%{ transform: translate(-50%, -50%) scale(1); }
-  50%{ transform: translate(-50%, -50%) scale(1.04); }
-}
-
+  @keyframes wrong{
+    0%,100%{ transform: translate(-50%, -50%) scale(1); }
+    50%{ transform: translate(-50%, -50%) scale(1.04); }
+  }
 
   .center{
     position:absolute;
@@ -130,16 +126,12 @@
 
 <script>
 (() => {
-  // ✅ Byt gärna till en lokal bild i ditt repo (t.ex. "./lock.jpg") för säker laddning
   const IMAGE_URL = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRcon_mDpHDnYwCTnJkKvfwv_4bMocY1wH08w&s";
 
-  // ✅ Rätt ordning:
   const SOLUTION = ["A","C","E","D","F","B"];
 
-  // ✅ Här byter du symbolerna som syns på varje knapp:
-  // Du kan använda text (✦), emoji (🗝️), runor (ᚠ), eller korta ord.
   const SYMBOLS = {
-    A: "🜁",  // byt till valfri symbol
+    A: "🜁",
     B: "🜃",
     C: "🜂",
     D: "🜄",
@@ -147,15 +139,10 @@
     F: "☾"
   };
 
-  // Positioner runt “låset”
-  const POS = {
-    A:[41, 10],
-    B:[68, 26],
-    C:[68, 58],
-    D:[41, 74],
-    E:[14, 58],
-    F:[14, 26]
-  };
+  // ✅ Perfekt cirkel runt mitten
+  const ORDER = ["A","B","C","D","E","F"];
+  const CENTER = { x: 50, y: 50 };
+  const RADIUS = 36; // justera 34–40 om du vill flytta in/ut
 
   const lock = document.getElementById("lock");
   const msg  = document.getElementById("msg");
@@ -181,7 +168,6 @@
       progress++;
       setMessage(`✓ ${letter}…`);
 
-      // lås knappen visuellt
       const el = document.querySelector(`[data-letter="${letter}"]`);
       if (el) el.classList.add("locked");
 
@@ -193,13 +179,11 @@
       return;
     }
 
-    // Fel: liten feedback och reset av sekvensen (kan ändras om du vill)
     setMessage("✗ Fel… fjädern spänner om.");
     flashWrong(letter);
-    // Reset efter kort delay
+
     setTimeout(() => {
       progress = 0;
-      // lås upp alla knappar visuellt
       document.querySelectorAll(".tile").forEach(t => t.classList.remove("locked"));
       setMessage("Låset väntar…");
     }, 450);
@@ -216,8 +200,11 @@
     lock.innerHTML = "";
     lock.style.setProperty("--img", `url("${IMAGE_URL}")`);
 
-    // Skapa knappar
-    for (const [letter, [xPct,yPct]] of Object.entries(POS)){
+    ORDER.forEach((letter, i) => {
+      const angle = (-90 + i * (360 / ORDER.length)) * (Math.PI / 180);
+      const xPct = CENTER.x + RADIUS * Math.cos(angle);
+      const yPct = CENTER.y + RADIUS * Math.sin(angle);
+
       const btn = document.createElement("div");
       btn.className = "tile";
       btn.dataset.letter = letter;
@@ -229,9 +216,8 @@
       btn.addEventListener("touchend", (e) => { e.preventDefault(); clickSymbol(letter); }, {passive:false});
 
       lock.appendChild(btn);
-    }
+    });
 
-    // Reset i mitten
     const center = document.createElement("div");
     center.className = "center";
     center.textContent = "Reset";
@@ -239,7 +225,6 @@
     lock.appendChild(center);
   }
 
-  // init
   setMessage("Låset väntar…");
   render();
 })();
