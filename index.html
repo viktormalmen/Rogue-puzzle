@@ -6,136 +6,230 @@
 <title>Tjuvens Kassaskåp</title>
 
 <style>
-body{
-  margin:0;
-  min-height:100vh;
-  display:grid;
-  place-items:center;
-  background:#0e0f14;
-  font-family:system-ui, sans-serif;
-  color:#eaeaff;
-}
+  body{
+    margin:0;
+    min-height:100vh;
+    display:grid;
+    place-items:center;
+    background:radial-gradient(900px 600px at 50% 30%, #22283a, #0b0d12 70%);
+    font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    color:#eaeaff;
+  }
 
-.lock{
-  width:320px;
-  height:320px;
-  border-radius:50%;
-  background:#1c1f2b;
-  position:relative;
-  box-shadow:0 0 40px rgba(0,0,0,.6);
-}
+  .wrap{
+    width:min(92vw, 380px);
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    align-items:stretch;
+  }
 
-.tile{
-  width:70px;
-  height:70px;
-  border-radius:50%;
-  background:var(--img);
-  background-size:300% 300%;
-  position:absolute;
-  display:grid;
-  place-items:center;
-  font-weight:700;
-  cursor:pointer;
-  transition:.2s;
-}
+  .lock{
+    width:100%;
+    aspect-ratio:1/1;
+    border-radius:50%;
+    background:#1c1f2b;
+    position:relative;
+    box-shadow:0 0 40px rgba(0,0,0,.6);
+    overflow:hidden;
+  }
 
-.tile.locked{
-  filter:grayscale(1) brightness(.6);
-  cursor:not-allowed;
-}
+  /* “Antikt lås”-bakgrund */
+  .lock::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background-image: var(--img);
+    background-size: cover;
+    background-position:center;
+    filter: contrast(1.05) brightness(.9);
+    opacity:.35;
+  }
 
-.center{
-  position:absolute;
-  inset:120px;
-  border-radius:50%;
-  background:#2a2e40;
-  display:grid;
-  place-items:center;
-  cursor:pointer;
-  font-size:14px;
-}
+  .tile{
+    width:74px;
+    height:74px;
+    border-radius:50%;
+    position:absolute;
+    display:grid;
+    place-items:center;
+    font-weight:800;
+    cursor:pointer;
+    user-select:none;
+    transition: transform .12s ease, filter .2s ease, opacity .2s ease;
+    outline: 1px solid rgba(255,255,255,.14);
+    background: rgba(20,22,30,.65);
+    backdrop-filter: blur(2px);
+    z-index: 1;
+  }
+  .tile:hover{ transform: scale(1.03); filter:brightness(1.08); }
+  .tile:active{ transform: scale(.98); }
 
-.message{
-  margin-top:16px;
-  text-align:center;
-  min-height:1.2em;
-}
+  .tile.locked{
+    opacity:.35;
+    filter: grayscale(1) brightness(.65);
+    cursor:not-allowed;
+  }
+
+  .tile.wrongflash{
+    animation: wrong .25s ease-in-out 2;
+  }
+  @keyframes wrong{
+    0%,100%{ transform: scale(1); }
+    50%{ transform: scale(1.04); }
+  }
+
+  .center{
+    position:absolute;
+    inset: 38%;
+    border-radius:50%;
+    background: rgba(255,255,255,.06);
+    outline: 1px solid rgba(255,255,255,.14);
+    display:grid;
+    place-items:center;
+    cursor:pointer;
+    z-index: 2;
+    font-weight:700;
+  }
+
+  .message{
+    text-align:center;
+    min-height:1.2em;
+    opacity:.92;
+  }
+
+  .solved{
+    animation:pulse 1.5s ease-in-out infinite;
+    box-shadow:0 0 50px rgba(120,255,200,.35);
+  }
+  @keyframes pulse{
+    0%,100%{ transform: scale(1); }
+    50%{ transform: scale(1.01); }
+  }
 </style>
 </head>
 
 <body>
 
-<div>
-  <div class="lock" id="lock"></div>
+<div class="wrap">
+  <div class="lock" id="lock" aria-label="Kassaskåpslås"></div>
   <div class="message" id="msg"></div>
 </div>
 
 <script>
 (() => {
-const IMAGE_URL = "https://i.imgur.com/4YJ6z9r.jpg"; // antikt lås
-const solution = [
-  "c-cw","e-ccw","c-cw","a-ccw","b-ccw","b-cw"
-];
+  // ✅ Byt gärna till en lokal bild i ditt repo (t.ex. "./lock.jpg") för säker laddning
+  const IMAGE_URL = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRcon_mDpHDnYwCTnJkKvfwv_4bMocY1wH08w&s";
 
-let input = [];
-let used = {};
+  // ✅ Rätt ordning:
+  const SOLUTION = ["A","C","E","D","F","B"];
 
-const lock = document.getElementById("lock");
-const msg = document.getElementById("msg");
+  // ✅ Här byter du symbolerna som syns på varje knapp:
+  // Du kan använda text (✦), emoji (🗝️), runor (ᚠ), eller korta ord.
+  const SYMBOLS = {
+    A: "🜁",  // byt till valfri symbol
+    B: "🜃",
+    C: "🜂",
+    D: "🜄",
+    E: "✶",
+    F: "☾"
+  };
 
-lock.style.setProperty("--img", `url(${IMAGE_URL})`);
+  // Positioner runt “låset”
+  const POS = {
+    A:[41, 10],
+    B:[68, 26],
+    C:[68, 58],
+    D:[41, 74],
+    E:[14, 58],
+    F:[14, 26]
+  };
 
-const positions = {
-  a:[125,10], b:[215,70], c:[215,170],
-  d:[125,230], e:[35,170], f:[35,70]
-};
+  const lock = document.getElementById("lock");
+  const msg  = document.getElementById("msg");
 
-function reset(){
-  lock.innerHTML="";
-  input=[];
-  used={};
-  msg.textContent="Låset väntar…";
-  create();
-}
+  let progress = 0;
+  let solved = false;
 
-function rotate(id, dir){
-  if(used[id]) return;
-  used[id]=true;
-  input.push(`${id}-${dir}`);
+  function setMessage(t){ msg.textContent = t; }
 
-  if(input.join("//")===solution.join("//")){
-    msg.textContent="🔓 Kassaskåpet öppnas ljudlöst.";
-    lock.style.boxShadow="0 0 40px rgba(120,255,200,.6)";
-  }else if(!solution.join("//").startsWith(input.join("//"))){
-    msg.textContent="❌ Ett klick… något gick fel.";
+  function reset(){
+    progress = 0;
+    solved = false;
+    lock.classList.remove("solved");
+    setMessage("Låset väntar…");
+    render();
   }
-}
 
-function create(){
-  Object.entries(positions).forEach(([id,[x,y]])=>{
-    const t=document.createElement("div");
-    t.className="tile";
-    t.textContent=id.toUpperCase();
-    t.style.left=x+"px";
-    t.style.top=y+"px";
+  function clickSymbol(letter){
+    if (solved) return;
 
-    t.onclick=()=>{
-      if(used[id]) return;
-      const dir = confirm("OK = medurs (cw)\nAvbryt = moturs (ccw)") ? "cw":"ccw";
-      rotate(id,dir);
-      t.classList.add("locked");
-    };
-    lock.appendChild(t);
-  });
+    const expected = SOLUTION[progress];
+    if (letter === expected) {
+      progress++;
+      setMessage(`✓ ${letter}…`);
 
-  const c=document.createElement("div");
-  c.className="center";
-  c.textContent="Reset";
-  c.onclick=reset;
-  lock.appendChild(c);
-}
+      // lås knappen visuellt
+      const el = document.querySelector(`[data-letter="${letter}"]`);
+      if (el) el.classList.add("locked");
 
-create();
+      if (progress === SOLUTION.length) {
+        solved = true;
+        lock.classList.add("solved");
+        setMessage("🔓 Kassaskåpet öppnas ljudlöst.");
+      }
+      return;
+    }
+
+    // Fel: liten feedback och reset av sekvensen (kan ändras om du vill)
+    setMessage("✗ Fel… fjädern spänner om.");
+    flashWrong(letter);
+    // Reset efter kort delay
+    setTimeout(() => {
+      progress = 0;
+      // lås upp alla knappar visuellt
+      document.querySelectorAll(".tile").forEach(t => t.classList.remove("locked"));
+      setMessage("Låset väntar…");
+    }, 450);
+  }
+
+  function flashWrong(letter){
+    const el = document.querySelector(`[data-letter="${letter}"]`);
+    if (!el) return;
+    el.classList.add("wrongflash");
+    setTimeout(() => el.classList.remove("wrongflash"), 600);
+  }
+
+  function render(){
+    lock.innerHTML = "";
+    lock.style.setProperty("--img", `url("${IMAGE_URL}")`);
+
+    // Skapa knappar
+    for (const [letter, [xPct,yPct]] of Object.entries(POS)){
+      const btn = document.createElement("div");
+      btn.className = "tile";
+      btn.dataset.letter = letter;
+      btn.style.left = `calc(${xPct}% - 37px)`;
+      btn.style.top  = `calc(${yPct}% - 37px)`;
+      btn.textContent = SYMBOLS[letter] ?? letter;
+
+      btn.addEventListener("click", () => clickSymbol(letter));
+      btn.addEventListener("touchend", (e) => { e.preventDefault(); clickSymbol(letter); }, {passive:false});
+
+      lock.appendChild(btn);
+    }
+
+    // Reset i mitten
+    const center = document.createElement("div");
+    center.className = "center";
+    center.textContent = "Reset";
+    center.addEventListener("click", reset);
+    lock.appendChild(center);
+  }
+
+  // init
+  setMessage("Låset väntar…");
+  render();
 })();
 </script>
 
